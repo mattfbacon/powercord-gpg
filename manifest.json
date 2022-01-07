@@ -1,0 +1,7 @@
+{
+	"name": "GPG",
+	"version": "0.1.0",
+	"description": "Transparent GPG {en,de}cryption for your DMs",
+	"author": "Matt Fellenz",
+	"license": "AGPL-3.0-or-later"
+}
