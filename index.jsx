@@ -8,10 +8,10 @@ const Settings = require('./Settings.jsx');
 const INJECTION_NAME_RX = 'gpg-plugin-receive';
 const INJECTION_NAME_TX = 'gpg-plugin-send';
 const INJECTION_NAME_UPDATECHID = 'gpg-plugin-chidup';
-const PGP_MESSAGE_HEADER = "-----BEGIN PGP MESSAGE-----\n\n";
-const PGP_MESSAGE_FOOTER = "\n-----END PGP MESSAGE-----";
-const PGP_PUBLIC_KEY_HEADER = "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n";
-const PGP_PUBLIC_KEY_FOOTER = "\n-----END PGP PUBLIC KEY BLOCK-----";
+const PGP_MESSAGE_HEADER = '-----BEGIN PGP MESSAGE-----\n\n';
+const PGP_MESSAGE_FOOTER = '\n-----END PGP MESSAGE-----';
+const PGP_PUBLIC_KEY_HEADER = '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n';
+const PGP_PUBLIC_KEY_FOOTER = '\n-----END PGP PUBLIC KEY BLOCK-----';
 
 /**
  * Execute a process, passing the given string to stdin, and capturing stdout. Promise rejects on non-zero exit code.
@@ -23,34 +23,36 @@ const PGP_PUBLIC_KEY_FOOTER = "\n-----END PGP PUBLIC KEY BLOCK-----";
  */
 async function stdinToStdout(executable, args, stdin) {
 	const name = arguments.callee.name;
-	console.log(name, "start", executable, args, stdin);
+	console.log(name, 'start', executable, args, stdin);
 	return new Promise(function (resolve, reject) {
 		let stdout = '';
 		let stderr = '';
 		const proc = child_process.spawn(executable, args, {
-			env: Object.create(process.env, { LANG: { value: "C" } }),
+			env: Object.create(process.env, { LANG: { value: 'C' } }),
 		});
 		proc.stdin.end(stdin);
-		proc.stdout.on('data', data => { console.log(name, "stdout", data); stdout += data; })
-		proc.stderr.on('data', data => { console.log(name, "stderr", data); stderr += data; })
+		proc.stdout.on('data', (data) => {
+			console.log(name, 'stdout', data);
+			stdout += data;
+		});
+		proc.stderr.on('data', (data) => {
+			console.log(name, 'stderr', data);
+			stderr += data;
+		});
 		proc.on('close', (code) => {
-			console.log(name, "close", 0);
+			console.log(name, 'close', 0);
 			if (code == 0) {
-				console.log(name, "resolve");
+				console.log(name, 'resolve');
 				resolve({ stdout, stderr });
 			} else {
-				console.log(name, "reject");
+				console.log(name, 'reject');
 				reject(stderr);
 			}
 		});
 	});
 }
 
-
-
-
 module.exports = class GPG extends Plugin {
-
 	gpgPath() {
 		return this.settings.get('gpg', 'gpg');
 	}
@@ -63,8 +65,8 @@ module.exports = class GPG extends Plugin {
 		});
 		powercord.api.commands.registerCommand({
 			command: 'gpg',
-			description: "Configure channel-specific GPG settings",
-			usage: "{c} {encrypt [true|false|toggle]|recipients [add|remove|clear]}",
+			description: 'Configure channel-specific GPG settings',
+			usage: '{c} {encrypt [true|false|toggle]|recipients [add|remove|clear]}',
 			executor: this.handleCommand.bind(this),
 			autocomplete: this.handleAutocomplete.bind(this),
 		});
@@ -129,7 +131,7 @@ module.exports = class GPG extends Plugin {
 		}
 		return {
 			send: false,
-			result: `Encryption ${config.encrypt ? 'enabled' : 'disabled'}`
+			result: `Encryption ${config.encrypt ? 'enabled' : 'disabled'}`,
 		};
 	}
 	async handleRecipientsCommand(subcommand, ...args) {
@@ -147,23 +149,23 @@ module.exports = class GPG extends Plugin {
 				for (const fingerprint of args) {
 					config.recipientKeys.add(fingerprint);
 				}
-				return { send: false, result: "Success!", };
+				return { send: false, result: 'Success!' };
 			case 'remove':
 				for (const fingerprint of args) {
 					config.recipientKeys.delete(fingerprint);
 				}
-				return { send: false, result: "Success!", };
+				return { send: false, result: 'Success!' };
 			case 'clear':
 				config.recipientKeys.clear();
-				return { send: false, result: "Success!", };
+				return { send: false, result: 'Success!' };
 			case undefined:
 				if (config.recipientKeys.size > 0) {
-					return { send: false, result: `The current recipient fingerprints are \`\`\`\n${[...config.recipientKeys.values()].join('\n')}\n\`\`\``, };
+					return { send: false, result: `The current recipient fingerprints are \`\`\`\n${[...config.recipientKeys.values()].join('\n')}\n\`\`\`` };
 				} else {
-					return { send: false, result: "There are currently no recipients.", };
+					return { send: false, result: 'There are currently no recipients.' };
 				}
 			default:
-				return { send: false, result: `Unknown subcommand ${subcommand}`, }
+				return { send: false, result: `Unknown subcommand ${subcommand}` };
 		}
 	}
 	async handleCommand(args, context) {
@@ -182,13 +184,15 @@ module.exports = class GPG extends Plugin {
 	}
 	handleAutocomplete(args) {
 		const lastArg = args.slice(-1)[0];
-		if (lastArg === null || lastArg === undefined) { return; }
+		if (lastArg === null || lastArg === undefined) {
+			return;
+		}
 		const completions = {
 			encrypt: ['', 'true', 'false', 'toggle'],
 			recipients: ['', 'add', 'remove', 'clear'],
 		};
 		completions.encryption = completions.encrypt;
-		const headers = ["Command", "Subcommand"];
+		const headers = ['Command', 'Subcommand'];
 		const options = (() => {
 			switch (args.length) {
 				case 1:
@@ -203,9 +207,11 @@ module.exports = class GPG extends Plugin {
 		if (!options || !header) {
 			return;
 		}
-		const commands = options.filter(option => option.startsWith(lastArg)).map(option => ({
-			command: option,
-		}));
+		const commands = options
+			.filter((option) => option.startsWith(lastArg))
+			.map((option) => ({
+				command: option,
+			}));
 		return {
 			header,
 			commands,
@@ -218,16 +224,22 @@ module.exports = class GPG extends Plugin {
 			return this.injectRxImpl(args, res);
 		});
 
-		Injector.inject(INJECTION_NAME_TX, messages, 'sendMessage', (args) => {
-			return this.injectTxImpl(args);
-		}, true);
+		Injector.inject(
+			INJECTION_NAME_TX,
+			messages,
+			'sendMessage',
+			(args) => {
+				return this.injectTxImpl(args);
+			},
+			true,
+		);
 
 		const PrivateChannel = await getModuleByDisplayName('PrivateChannel');
 		Injector.inject(INJECTION_NAME_UPDATECHID, PrivateChannel.prototype, 'render', (args, res) => {
 			const re = /\@me\/(.*)/;
 			this.currentChannel = re.exec(window.location.href)[1];
 			return res;
-		})
+		});
 	}
 
 	uninject() {
@@ -259,12 +271,12 @@ module.exports = class GPG extends Plugin {
 		 */
 		const content = args[0].content;
 		if (GPG.isPgpMessage(content)) {
-			return (<GPGContainer rawContent={content} gpgPath={this.gpgPath()} plugin={this} />);
+			return <GPGContainer rawContent={content} gpgPath={this.gpgPath()} plugin={this} />;
 		} else if (GPG.isPgpPublicKey(content)) {
 			const render = res.props.render;
 			res.props.render = (props) => {
 				const elem = render(props);
-				elem.children.push((<a href="javascript:void;">Add key</a>));
+				elem.children.push(<a href="javascript:void;">Add key</a>);
 				return elem;
 			};
 		} else {
@@ -273,7 +285,9 @@ module.exports = class GPG extends Plugin {
 	}
 
 	injectTxImpl(args) {
-		if (args[1].shibboleth) { return args; }
+		if (args[1].shibboleth) {
+			return args;
+		}
 
 		const channelId = args[0];
 
@@ -284,16 +298,18 @@ module.exports = class GPG extends Plugin {
 		}
 
 		const baseArgs = ['-sea', '--batch', '--always-trust'];
-		stdinToStdout(this.gpgPath(), baseArgs.concat(GPG.makeRecipients(senderKey, ...recipientKeys)), args[1].content).then(async ({ stdout: encrypted }) => {
-			const { sendMessage } = await getModule(['sendMessage']);
-			sendMessage(channelId, { content: "```\n" + encrypted + "\n```", shibboleth: true, });
-		}).catch(err => {
-			this.error("Failed to encrypt", err);
-		});
+		stdinToStdout(this.gpgPath(), baseArgs.concat(GPG.makeRecipients(senderKey, ...recipientKeys)), args[1].content)
+			.then(async ({ stdout: encrypted }) => {
+				const { sendMessage } = await getModule(['sendMessage']);
+				sendMessage(channelId, { content: '```\n' + encrypted + '\n```', shibboleth: true });
+			})
+			.catch((err) => {
+				this.error('Failed to encrypt', err);
+			});
 
 		return false;
 	}
-}
+};
 
 class GPGContainer extends React.Component {
 	async decryptPgp() {
@@ -307,8 +323,8 @@ class GPGContainer extends React.Component {
 	 */
 	static friendlyError(raw_error) {
 		raw_error = raw_error.toLowerCase();
-		if (raw_error.includes("decryption failed: no secret key")) {
-			return "No secret key to decrypt this message";
+		if (raw_error.includes('decryption failed: no secret key')) {
+			return 'No secret key to decrypt this message';
 		} else {
 			const lines = raw_error.split('\n');
 			return lines[lines.length - 1];
@@ -320,25 +336,27 @@ class GPGContainer extends React.Component {
 
 	constructor(props) {
 		super(props);
-		this.state = { done: false, };
+		this.state = { done: false };
 	}
 
 	componentDidMount() {
-		this.decryptPgp().then(({ stdout: decrypted, stderr: log }) => {
-			this.setState({
-				done: true,
-				succeeded: true,
-				content: GPGContainer.sanitize(decrypted),
-				log,
+		this.decryptPgp()
+			.then(({ stdout: decrypted, stderr: log }) => {
+				this.setState({
+					done: true,
+					succeeded: true,
+					content: GPGContainer.sanitize(decrypted),
+					log,
+				});
+			})
+			.catch((err) => {
+				this.setState({
+					done: true,
+					succeeded: false,
+					log: err,
+					friendlyError: GPGContainer.friendlyError(err),
+				});
 			});
-		}).catch(err => {
-			this.setState({
-				done: true,
-				succeeded: false,
-				log: err,
-				friendlyError: GPGContainer.friendlyError(err),
-			});
-		});
 	}
 
 	toggleInfo() {
@@ -349,34 +367,52 @@ class GPGContainer extends React.Component {
 		if (this.state.done) {
 			let content;
 			if (this.state.succeeded) {
-				content = (<span style={{ "white-space": "normal" }}>
-					<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>
-						<i class="fas fa-lock" style={{ color: "green" }}></i>
-					</a>
-					&nbsp;
-					<span dangerouslySetInnerHTML={{ __html: this.state.content }} />
-				</span>);
+				content = (
+					<span style={{ 'white-space': 'normal' }}>
+						<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>
+							<i class="fas fa-lock" style={{ color: 'green' }}></i>
+						</a>
+						&nbsp;
+						<span dangerouslySetInnerHTML={{ __html: this.state.content }} />
+					</span>
+				);
 			} else {
-				content = (<span style={{
-					color: "red"
-				}}>
-					{this.state.friendlyError}
-					&nbsp;
-					<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>{this.state.info ? "Less" : "More"}</a>
-				</span>);
+				content = (
+					<span
+						style={{
+							color: 'red',
+						}}
+					>
+						{this.state.friendlyError}
+						&nbsp;
+						<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>
+							{this.state.info ? 'Less' : 'More'}
+						</a>
+					</span>
+				);
 			}
-			return (<>
-				{content}
-				{this.state.info && <div>
-					<span>This message was encrypted with PGP. The original message content is as follows:</span>
-					<pre><code class={["hljs"]}>{this.props.rawContent}</code></pre>
-					<span>GPG command output:</span>
-					<pre><code class={["hljs"]}>{this.state.log}</code></pre>
-					<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>Close</a>
-				</div>}
-			</>)
+			return (
+				<>
+					{content}
+					{this.state.info && (
+						<div>
+							<span>This message was encrypted with PGP. The original message content is as follows:</span>
+							<pre>
+								<code class={['hljs']}>{this.props.rawContent}</code>
+							</pre>
+							<span>GPG command output:</span>
+							<pre>
+								<code class={['hljs']}>{this.state.log}</code>
+							</pre>
+							<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>
+								Close
+							</a>
+						</div>
+					)}
+				</>
+			);
 		} else {
-			return (<span>Decrypting...</span>);
+			return <span>Decrypting...</span>;
 		}
 	}
 }

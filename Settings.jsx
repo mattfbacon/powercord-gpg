@@ -5,29 +5,22 @@ module.exports = class Settings extends React.Component {
 	render() {
 		return (
 			<div>
-				<TextInput
-					onChange={val => this.props.updateSetting('gpg', val)}
-					defaultValue={this.props.getSetting('gpg', 'gpg')}
-					required={true}
-					disabled={false}
-					note='Name of the gpg executable on your system'
-				>
+				<TextInput onChange={(val) => this.props.updateSetting('gpg', val)} defaultValue={this.props.getSetting('gpg', 'gpg')} required={true} disabled={false} note="Name of the gpg executable on your system">
 					GPG Binary
 				</TextInput>
 				<TextInput
-					onChange={val => this.props.updateSetting('sender-fingerprint', val)}
+					onChange={(val) => this.props.updateSetting('sender-fingerprint', val)}
 					defaultValue={this.props.getSetting('sender-fingerprint', '')}
 					required={true}
 					disabled={false}
-					note='Fingerprint of your personal public key (secret key must be available)'
+					note="Fingerprint of your personal public key (secret key must be available)"
 				>
 					Sender PGP Key
 				</TextInput>
 			</div>
-		)
+		);
 	}
-}
-
+};
 
 // module.exports = ({ getSetting, updateSetting, toggleSetting }) => (
 // 	<div>
