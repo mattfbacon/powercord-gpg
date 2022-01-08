@@ -22,7 +22,8 @@ const PGP_PUBLIC_KEY_FOOTER = "\n-----END PGP PUBLIC KEY BLOCK-----";
  * @returns {Promise<string>} - Resolves with process's stdout if successful, or rejects with the process's stderr if not
  */
 async function stdinToStdout(executable, args, stdin) {
-	console.log("call:", executable, args, stdin);
+	const name = arguments.callee.name;
+	console.log(name, "start", executable, args, stdin);
 	return new Promise(function (resolve, reject) {
 		let stdout = '';
 		let stderr = '';
@@ -30,12 +31,15 @@ async function stdinToStdout(executable, args, stdin) {
 			env: Object.create(process.env, { LANG: { value: "C" } }),
 		});
 		proc.stdin.end(stdin);
-		proc.stdout.on('data', data => { stdout += data; })
-		proc.stderr.on('data', data => { stderr += data; })
+		proc.stdout.on('data', data => { console.log(name, "stdout", data); stdout += data; })
+		proc.stderr.on('data', data => { console.log(name, "stderr", data); stderr += data; })
 		proc.on('close', (code) => {
+			console.log(name, "close", 0);
 			if (code == 0) {
+				console.log(name, "resolve");
 				resolve({ stdout, stderr });
 			} else {
+				console.log(name, "reject");
 				reject(stderr);
 			}
 		});
