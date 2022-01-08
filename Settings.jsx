@@ -1,20 +1,9 @@
 const { React, getModule } = require('powercord/webpack');
 const { TextInput, SelectInput, SwitchItem } = require('powercord/components/settings');
 
-module.exports = class settings extends React.PureComponent {
-	constructor(props) {
-	  super(props);
-	  this.props.updateSetting('publicKeys', {"879871966394339369": "00507F6492F147C2865E7558D0061A7BB596E3B3"})
-	}
-
+module.exports = class Settings extends React.Component {
 	render() {
-		if(!this.props.getSetting('uid')){
-			let gcu = getModule(['getCurrentUser'], false);
-			while(!gcu.getCurrentUser());
-			this.props.updateSetting('uid', gcu.getCurrentUser().id);
-		}
-
-		return(
+		return (
 			<div>
 				<TextInput
 					onChange={val => this.props.updateSetting('gpg', val)}
@@ -22,7 +11,7 @@ module.exports = class settings extends React.PureComponent {
 					required={true}
 					disabled={false}
 					note='Name of the gpg executable on your system'
-					>
+				>
 					GPG Binary
 				</TextInput>
 				<TextInput
@@ -31,16 +20,8 @@ module.exports = class settings extends React.PureComponent {
 					required={true}
 					disabled={false}
 					note='Fingerprint of your personal public key (secret key must be available)'
-					>
+				>
 					Sender PGP Key
-				</TextInput>
-				<TextInput
-					defaultValue={this.props.getSetting('uid')}
-					required={false}
-					disabled={true}
-					note='Your Discord UID'
-					>
-					Discord UID
 				</TextInput>
 			</div>
 		)
