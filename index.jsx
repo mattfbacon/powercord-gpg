@@ -106,7 +106,8 @@ class GPGContainer extends React.Component {
 		if (raw_error.includes("decryption failed: no secret key")) {
 			return "No secret key to decrypt this message";
 		} else {
-			return raw_error.split('\n').slice(1).join('\n');
+			const lines = raw_error.split('\n');
+			return lines[lines.length - 1];
 		}
 	}
 	static sanitize(raw) {
