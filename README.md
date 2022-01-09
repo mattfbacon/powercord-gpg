@@ -1,6 +1,6 @@
-# Powercord GPG
+# Powercord PGP
 
-A transparent GPG encryption/decryption plugin for Powercord
+A transparent PGP encryption/decryption plugin for Powercord, using GPG
 
 Copy that bad boy to your Powercord plugins folder!
 

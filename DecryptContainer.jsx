@@ -1,25 +1,8 @@
 const { React } = require('powercord/webpack');
 const { stdinToStdout } = require('./util');
+const PGP = require('./PGP');
 
-class GPGContainer extends React.Component {
-	async decryptPgp() {
-		return stdinToStdout(this.props.gpgPath, ['-d', '--batch'], this.props.rawContent);
-	}
-
-	/**
-	 * Make a friendly error message
-	 * @param {string} raw_error - The raw error message from GPG
-	 * @returns {string}
-	 */
-	static friendlyError(raw_error) {
-		raw_error = raw_error.toLowerCase();
-		if (raw_error.includes('decryption failed: no secret key')) {
-			return 'No secret key to decrypt this message';
-		} else {
-			const lines = raw_error.split('\n');
-			return lines[lines.length - 1];
-		}
-	}
+class DecryptContainer extends React.Component {
 	static sanitize(raw) {
 		return raw.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;').replaceAll('\n', '<br>');
 	}
@@ -30,12 +13,12 @@ class GPGContainer extends React.Component {
 	}
 
 	componentDidMount() {
-		this.decryptPgp()
+		PGP.decrypt(this.props.gpgPath, this.props.rawContent)
 			.then(({ stdout: decrypted, stderr: log }) => {
 				this.setState({
 					done: true,
 					succeeded: true,
-					content: GPGContainer.sanitize(decrypted),
+					content: DecryptContainer.sanitize(decrypted),
 					log,
 				});
 			})
@@ -44,7 +27,7 @@ class GPGContainer extends React.Component {
 					done: true,
 					succeeded: false,
 					log: err,
-					friendlyError: GPGContainer.friendlyError(err),
+					friendlyError: PGP.friendlyError(err),
 				});
 			});
 	}
@@ -59,7 +42,7 @@ class GPGContainer extends React.Component {
 			if (this.state.succeeded) {
 				content = (
 					<span style={{ 'white-space': 'normal' }}>
-						<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>
+						<a href="javascript:void(0);" onClick={this.toggleInfo.bind(this)}>
 							<i class="fas fa-lock" style={{ color: 'green' }}></i>
 						</a>
 						&nbsp;
@@ -74,7 +57,7 @@ class GPGContainer extends React.Component {
 						}}>
 						{this.state.friendlyError}
 						&nbsp;
-						<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>
+						<a href="javascript:void(0);" onClick={this.toggleInfo.bind(this)}>
 							{this.state.info ? 'Less' : 'More'}
 						</a>
 					</span>
@@ -93,7 +76,7 @@ class GPGContainer extends React.Component {
 							<pre>
 								<code class={['hljs']}>{this.state.log}</code>
 							</pre>
-							<a href="javascript:void;" onClick={this.toggleInfo.bind(this)}>
+							<a href="javascript:void(0);" onClick={this.toggleInfo.bind(this)}>
 								Close
 							</a>
 						</div>
@@ -106,4 +89,4 @@ class GPGContainer extends React.Component {
 	}
 }
 
-module.exports = GPGContainer;
+module.exports = DecryptContainer;

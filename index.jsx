@@ -3,11 +3,11 @@ const { Plugin } = require('powercord/entities');
 const Injector = require('powercord/injector');
 
 const Settings = require('./Settings');
-const GPGContainer = require('./GPGContainer');
-const { stdinToStdout } = require('./util');
+const DecryptContainer = require('./DecryptContainer');
 const Constants = require('./constants');
+const PGP = require('./PGP');
 
-module.exports = class GPG extends Plugin {
+module.exports = class PGPPlugin extends Plugin {
 	gpgPath() {
 		return this.settings.get('gpg', 'gpg');
 	}
@@ -15,12 +15,12 @@ module.exports = class GPG extends Plugin {
 	startPlugin() {
 		powercord.api.settings.registerSettings(this.entityID, {
 			category: this.entityID,
-			label: 'GPG',
+			label: 'PGP',
 			render: Settings,
 		});
 		powercord.api.commands.registerCommand({
-			command: 'gpg',
-			description: 'Configure channel-specific GPG settings',
+			command: 'pgp',
+			description: 'Configure channel-specific PGP settings',
 			usage: '{c} {encrypt [true|false|toggle]|recipients [add|remove|clear]}',
 			executor: this.handleCommand.bind(this),
 			autocomplete: this.handleAutocomplete.bind(this),
@@ -31,7 +31,7 @@ module.exports = class GPG extends Plugin {
 
 	pluginWillUnload() {
 		powercord.api.settings.unregisterSettings(this.entityID);
-		powercord.api.commands.unregisterCommand('gpg');
+		powercord.api.commands.unregisterCommand('pgp');
 		this.uninject();
 	}
 
@@ -94,7 +94,7 @@ module.exports = class GPG extends Plugin {
 		switch (subcommand) {
 			case 'add':
 				for (const fingerprint of args) {
-					if (!GPG.isFingerprint(fingerprint)) {
+					if (!PGP.isFingerprint(fingerprint)) {
 						return {
 							send: false,
 							result: `Invalid fingerprint \`${fingerprint}\`.`,
@@ -203,31 +203,14 @@ module.exports = class GPG extends Plugin {
 		Injector.uninject(Constants.INJECTION_NAME_UPDATECHID);
 	}
 
-	static isPgpMessage(content) {
-		return content.startsWith(Constants.PGP_MESSAGE_HEADER) && content.endsWith(Constants.PGP_MESSAGE_FOOTER);
-	}
-	static isPgpPublicKey(content) {
-		return content.startsWith(Constants.PGP_PUBLIC_KEY_HEADER) && content.endsWith(Constants.PGP_PUBLIC_KEY_FOOTER);
-	}
-	static makeRecipients(...fingerprints) {
-		return fingerprints.flatMap((fingerprint) => ['--recipient', fingerprint]);
-	}
-	/**
-	 * @param {string} raw - The raw string that may or may not be a fingerprint
-	 * @returns {bool} - whether the string is a fingerprint
-	 */
-	static isFingerprint(raw) {
-		return raw.match(/[0-9A-F]{40}/) !== null;
-	}
-
 	injectRxImpl(args, res) {
 		/**
 		 * @type {string}
 		 */
 		const content = args[0].content;
-		if (GPG.isPgpMessage(content)) {
-			return <GPGContainer rawContent={content} gpgPath={this.gpgPath()} plugin={this} />;
-		} else if (GPG.isPgpPublicKey(content)) {
+		if (PGP.isMessage(content)) {
+			return <DecryptContainer rawContent={content} gpgPath={this.gpgPath()} plugin={this} />;
+		} else if (PGP.isPublicKey(content)) {
 			const render = res.props.render;
 			res.props.render = (props) => {
 				const elem = render(props);
@@ -252,8 +235,7 @@ module.exports = class GPG extends Plugin {
 			return args;
 		}
 
-		const baseArgs = ['-sea', '--batch', '--always-trust'];
-		stdinToStdout(this.gpgPath(), baseArgs.concat(GPG.makeRecipients(senderKey, ...recipientKeys)), args[1].content)
+		PGP.encrypt(args[0].content, [senderKey, ...recipientKeys])
 			.then(async ({ stdout: encrypted }) => {
 				const { sendMessage } = await getModule(['sendMessage']);
 				sendMessage(channelId, { content: '```\n' + encrypted + '\n```', shibboleth: true });
