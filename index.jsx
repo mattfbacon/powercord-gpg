@@ -123,7 +123,7 @@ module.exports = class PGPPlugin extends Plugin {
 				return { send: false, result: `Unknown subcommand ${subcommand}` };
 		}
 	}
-	async handleCommand(args, context) {
+	async handleCommand(args, _context) {
 		const subcommand = args[0];
 		switch (subcommand) {
 			case 'encrypt':
