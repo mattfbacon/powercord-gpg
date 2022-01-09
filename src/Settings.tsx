@@ -1,9 +1,9 @@
 const { React } = require('powercord/webpack');
 const { TextInput } = require('powercord/components/settings');
 
-module.exports = (props) => (
+export default (props) => (
 	<div>
-		<TextInput onChange={(val) => this.props.updateSetting('gpg', val)} defaultValue={props.getSetting('gpg', 'gpg')} required={true} disabled={false} note="Name of the gpg executable on your system">
+		<TextInput onChange={(val) => props.updateSetting('gpg', val)} defaultValue={props.getSetting('gpg', 'gpg')} required={true} disabled={false} note="Name of the gpg executable on your system">
 			GPG Binary
 		</TextInput>
 		<TextInput

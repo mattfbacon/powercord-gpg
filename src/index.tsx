@@ -1,13 +1,15 @@
-const { React, getModule, messages, getModuleByDisplayName } = require('powercord/webpack');
-const { Plugin } = require('powercord/entities');
-const Injector = require('powercord/injector');
+import { React, getModule, messages, getModuleByDisplayName } from 'powercord/webpack';
+import { Plugin } from 'powercord/entities';
+import Injector = require('powercord/injector');
 
-const Settings = require('./Settings');
-const DecryptContainer = require('./DecryptContainer');
-const Constants = require('./constants');
-const PGP = require('./PGP');
+import Settings from './Settings';
+import DecryptContainer from './DecryptContainer';
+import * as Constants from './constants';
+import * as PGP from './PGP';
 
 module.exports = class PGPPlugin extends Plugin {
+	currentChannel: string | null | undefined;
+
 	gpgPath() {
 		return this.settings.get('gpg', 'gpg');
 	}
@@ -39,7 +41,7 @@ module.exports = class PGPPlugin extends Plugin {
 	 * @returns {{ recipientKeys: Set<string>, encrypt: bool }}
 	 */
 	getChannelConfig() {
-		let container = this.settings.get('channel-config');
+		let container: Map<string, any> = this.settings.get('channel-config');
 		if (!container || Object.prototype.toString.call(container) !== '[object Map]') {
 			container = new Map();
 			this.settings.set('channel-config', container);
@@ -55,7 +57,7 @@ module.exports = class PGPPlugin extends Plugin {
 		return config;
 	}
 
-	async handleEncryptCommand(subcommand) {
+	async handleEncryptCommand(subcommand?: string): powercord.api.commands.CommandResult {
 		const config = this.getChannelConfig();
 		switch (subcommand) {
 			case 'true':
@@ -89,7 +91,7 @@ module.exports = class PGPPlugin extends Plugin {
 			result: `Encryption ${config.encrypt ? 'enabled' : 'disabled'}`,
 		};
 	}
-	async handleRecipientsCommand(subcommand, ...args) {
+	async handleRecipientsCommand(subcommand: string, ...args: string[]) {
 		const config = this.getChannelConfig();
 		switch (subcommand) {
 			case 'add':
@@ -123,37 +125,37 @@ module.exports = class PGPPlugin extends Plugin {
 				return { send: false, result: `Unknown subcommand ${subcommand}` };
 		}
 	}
-	async handleCommand(args, _context) {
+	async handleCommand(args: string[], _context: unknown) {
 		const subcommand = args[0];
 		switch (subcommand) {
 			case 'encrypt':
 			case 'encryption':
 				return this.handleEncryptCommand(args[1]);
 			case 'recipients':
-				return this.handleRecipientsCommand(...args.slice(1));
+				return this.handleRecipientsCommand(args[1], ...args.slice(2)); // typescript doesn't like ...args.slice(1)
 			case undefined:
 				return { send: false, result: `Missing subcommand ${subcommand}` };
 			default:
 				return { send: false, result: `Unknown subcommand ${subcommand}` };
 		}
 	}
-	handleAutocomplete(args) {
+	handleAutocomplete(args: string[]) {
 		const lastArg = args.slice(-1)[0];
 		if (lastArg === null || lastArg === undefined) {
 			return;
 		}
-		const completions = {
-			encrypt: ['', 'true', 'false', 'toggle'],
-			recipients: ['', 'add', 'remove', 'clear'],
-		};
-		completions.encryption = completions.encrypt;
+		const completions = new Map([
+			['encrypt', ['', 'true', 'false', 'toggle']],
+			['encryption', ['', 'true', 'false', 'toggle']],
+			['recipients', ['', 'add', 'remove', 'clear']],
+		]);
 		const headers = ['Command', 'Subcommand'];
 		const options = (() => {
 			switch (args.length) {
 				case 1:
 					return Object.keys(completions);
 				case 2:
-					return completions[args[0]];
+					return completions.get(args[0]) ?? [];
 				default:
 					return [];
 			}
@@ -175,24 +177,19 @@ module.exports = class PGPPlugin extends Plugin {
 
 	async inject() {
 		const parser = await getModule(['parse', 'parseTopic']);
-		Injector.inject(Constants.INJECTION_NAME_RX, parser.defaultRules.codeBlock, 'react', (args, res) => {
-			return this.injectRxImpl(args, res);
-		});
+		Injector.inject(Constants.INJECTION_NAME_RX, parser.defaultRules.codeBlock, 'react', this.injectRxImpl);
 
-		Injector.inject(
-			Constants.INJECTION_NAME_TX,
-			messages,
-			'sendMessage',
-			(args) => {
-				return this.injectTxImpl(args);
-			},
-			true,
-		);
+		Injector.inject(Constants.INJECTION_NAME_TX, messages, 'sendMessage', this.injectTxImpl, true);
 
 		const PrivateChannel = await getModuleByDisplayName('PrivateChannel');
 		Injector.inject(Constants.INJECTION_NAME_UPDATECHID, PrivateChannel.prototype, 'render', (args, res) => {
 			const re = /\@me\/(.*)/;
-			this.currentChannel = re.exec(window.location.href)[1];
+			const match = re.exec(window.location.href);
+			if (!match) {
+				this.currentChannel = null;
+			} else {
+				this.currentChannel = match[1];
+			}
 			return res;
 		});
 	}
@@ -203,7 +200,7 @@ module.exports = class PGPPlugin extends Plugin {
 		Injector.uninject(Constants.INJECTION_NAME_UPDATECHID);
 	}
 
-	injectRxImpl(args, res) {
+	injectRxImpl(args: any, res: React.Component): React.Component {
 		/**
 		 * @type {string}
 		 */
@@ -212,11 +209,12 @@ module.exports = class PGPPlugin extends Plugin {
 			return <DecryptContainer rawContent={content} gpgPath={this.gpgPath()} plugin={this} />;
 		} else if (PGP.isPublicKey(content)) {
 			const render = res.props.render;
-			res.props.render = (props) => {
+			res.props.render = (props: unknown) => {
 				const elem = render(props);
 				elem.children.push(<a href="javascript:void(0);">Add key</a>);
 				return elem;
 			};
+			return res;
 		} else {
 			return res;
 		}
@@ -235,7 +233,7 @@ module.exports = class PGPPlugin extends Plugin {
 			return args;
 		}
 
-		PGP.encrypt(args[0].content, [senderKey, ...recipientKeys])
+		PGP.encrypt(this.gpgPath(), args[0].content, [senderKey, ...recipientKeys])
 			.then(async ({ stdout: encrypted }) => {
 				const { sendMessage } = await getModule(['sendMessage']);
 				sendMessage(channelId, { content: '```\n' + encrypted + '\n```', shibboleth: true });

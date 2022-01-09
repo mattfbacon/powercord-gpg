@@ -1,0 +1,28 @@
+{
+  "name": "powercord-gpg",
+  "version": "0.1.0",
+  "description": "Transparent PGP {en,de}cryption for your DMs, using GPG.",
+  "main": "index.jsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mattfbacon/powercord-gpg.git"
+  },
+  "keywords": [
+    "powercord",
+    "powercord-plugin"
+  ],
+  "author": "Matt Fellenz et al",
+  "license": "AGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/mattfbacon/powercord-gpg/issues"
+  },
+  "homepage": "https://github.com/mattfbacon/powercord-gpg#readme",
+  "devDependencies": {
+    "@types/node": "^17.0.8",
+    "@types/react": "^17.0.38",
+    "typescript": "^4.5.4"
+  }
+}

@@ -1,13 +1,18 @@
 const { React } = require('powercord/webpack');
-const { stdinToStdout } = require('./util');
-const PGP = require('./PGP');
+import * as PGP from './PGP';
 
-class DecryptContainer extends React.Component {
-	static sanitize(raw) {
+export interface Props {
+	rawContent: string;
+	gpgPath: string;
+	plugin: any;
+}
+
+export default class DecryptContainer extends React.Component<Props> {
+	static sanitize(raw: string): string {
 		return raw.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;').replaceAll('\n', '<br>');
 	}
 
-	constructor(props) {
+	constructor(props: Props) {
 		super(props);
 		this.state = { done: false };
 	}
@@ -41,9 +46,9 @@ class DecryptContainer extends React.Component {
 			let content;
 			if (this.state.succeeded) {
 				content = (
-					<span style={{ 'white-space': 'normal' }}>
+					<span style={{ whiteSpace: 'normal' }}>
 						<a href="javascript:void(0);" onClick={this.toggleInfo.bind(this)}>
-							<i class="fas fa-lock" style={{ color: 'green' }}></i>
+							<i className="fas fa-lock" style={{ color: 'green' }}></i>
 						</a>
 						&nbsp;
 						<span dangerouslySetInnerHTML={{ __html: this.state.content }} />
@@ -70,11 +75,11 @@ class DecryptContainer extends React.Component {
 						<div>
 							<span>This message was encrypted with PGP. The original message content is as follows:</span>
 							<pre>
-								<code class={['hljs']}>{this.props.rawContent}</code>
+								<code className="hljs">{this.props.rawContent}</code>
 							</pre>
 							<span>GPG command output:</span>
 							<pre>
-								<code class={['hljs']}>{this.state.log}</code>
+								<code className="hljs">{this.state.log}</code>
 							</pre>
 							<a href="javascript:void(0);" onClick={this.toggleInfo.bind(this)}>
 								Close
@@ -88,5 +93,3 @@ class DecryptContainer extends React.Component {
 		}
 	}
 }
-
-module.exports = DecryptContainer;

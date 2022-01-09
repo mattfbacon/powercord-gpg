@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"module": "none",
+		"noImplicitAny": true,
+		"removeComments": true,
+		"jsx": "react",
+		"strict": true,
+		"alwaysStrict": true,
+		"allowJs": false,
+		"lib": ["esnext", "dom"],
+		"downlevelIteration": true,
+		"esModuleInterop": true,
+		"typeRoots": [
+			"node_modules/@types",
+			"./typings",
+		],
+		"target": "esnext",
+		"outDir": "dist",
+	},
+	"files": ["src/index.tsx"],
+	"include": [
+		"typings"
+	]
+}
