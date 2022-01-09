@@ -214,7 +214,7 @@ module.exports = class PGPPlugin extends Plugin {
 			const render = res.props.render;
 			res.props.render = (props) => {
 				const elem = render(props);
-				elem.children.push(<a href="javascript:void;">Add key</a>);
+				elem.children.push(<a href="javascript:void(0);">Add key</a>);
 				return elem;
 			};
 		} else {
