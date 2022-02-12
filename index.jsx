@@ -21,7 +21,7 @@ module.exports = class PGPPlugin extends Plugin {
 		powercord.api.commands.registerCommand({
 			command: 'pgp',
 			description: 'Configure channel-specific PGP settings',
-			usage: '{c} {encrypt [true|false|toggle]|recipients [add|remove|clear]}',
+			usage: '{c} {encrypt [true|false|toggle]|recipients [add|remove|clear]|share}',
 			executor: this.handleCommand.bind(this),
 			autocomplete: this.handleAutocomplete.bind(this),
 		});
@@ -123,6 +123,11 @@ module.exports = class PGPPlugin extends Plugin {
 				return { send: false, result: `Unknown subcommand ${subcommand}` };
 		}
 	}
+	async handleShareCommand() {
+		console.info('sender fingerprint', this.settings.get('sender-fingerprint'));
+		const key = await PGP.exportPublicKey(this.gpgPath(), this.settings.get('sender-fingerprint'));
+		(await getModule(['sendMessage'])).sendMessage(this.currentChannel, { content: `\`\`\`${key.stdout}\`\`\`` });
+	}
 	async handleCommand(args, _context) {
 		const subcommand = args[0];
 		switch (subcommand) {
@@ -131,6 +136,8 @@ module.exports = class PGPPlugin extends Plugin {
 				return this.handleEncryptCommand(args[1]);
 			case 'recipients':
 				return this.handleRecipientsCommand(...args.slice(1));
+			case 'share':
+				return this.handleShareCommand();
 			case undefined:
 				return { send: false, result: `Missing subcommand ${subcommand}` };
 			default:
@@ -143,6 +150,7 @@ module.exports = class PGPPlugin extends Plugin {
 			return;
 		}
 		const completions = {
+			share: [''],
 			encrypt: ['', 'true', 'false', 'toggle'],
 			recipients: ['', 'add', 'remove', 'clear'],
 		};
@@ -203,6 +211,10 @@ module.exports = class PGPPlugin extends Plugin {
 		Injector.uninject(Constants.INJECTION_NAME_UPDATECHID);
 	}
 
+	addKey(key) {
+		PGP.addPublicKey(this.gpgPath(), key);
+	}
+
 	injectRxImpl(args, res) {
 		/**
 		 * @type {string}
@@ -211,12 +223,15 @@ module.exports = class PGPPlugin extends Plugin {
 		if (PGP.isMessage(content)) {
 			return <DecryptContainer rawContent={content} gpgPath={this.gpgPath()} plugin={this} />;
 		} else if (PGP.isPublicKey(content)) {
-			const render = res.props.render;
-			res.props.render = (props) => {
-				const elem = render(props);
-				elem.children.push(<a href="javascript:void(0);">Add key</a>);
-				return elem;
-			};
+			const addKey = this.addKey.bind(this, content);
+			return (
+				<>
+					{res}
+					<a href="javascript:void(0);" onClick={addKey}>
+						Add key
+					</a>
+				</>
+			);
 		} else {
 			return res;
 		}
@@ -235,7 +250,7 @@ module.exports = class PGPPlugin extends Plugin {
 			return args;
 		}
 
-		PGP.encrypt(args[0].content, [senderKey, ...recipientKeys])
+		PGP.encrypt(this.gpgPath(), args[0].content, [senderKey, ...recipientKeys])
 			.then(async ({ stdout: encrypted }) => {
 				const { sendMessage } = await getModule(['sendMessage']);
 				sendMessage(channelId, { content: '```\n' + encrypted + '\n```', shibboleth: true });

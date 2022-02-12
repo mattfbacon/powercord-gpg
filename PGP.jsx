@@ -34,6 +34,14 @@ async function encrypt(gpgPath, plain, recipients) {
 	const baseArgs = ['-sea', '--batch', '--always-trust'];
 	return stdinToStdout(gpgPath, baseArgs.concat(makeRecipients(...recipients)), plain);
 }
+async function addPublicKey(gpgPath, key) {
+	const baseArgs = ['--import', '--batch'];
+	return stdinToStdout(gpgPath, baseArgs, key);
+}
+async function exportPublicKey(gpgPath, fingerprint) {
+	const baseArgs = ['--export', '--armor', '--batch'];
+	return stdinToStdout(gpgPath, fingerprint ? baseArgs.concat(fingerprint) : baseArgs, '');
+}
 
 const friendlyErrorMessages = new Map([['no secret key', 'No secret key to decrypt this message']]);
 /**
@@ -56,6 +64,8 @@ function friendlyError(rawError) {
 module.exports = {
 	isMessage,
 	isPublicKey,
+	addPublicKey,
+	exportPublicKey,
 	isFingerprint,
 	decrypt,
 	encrypt,
