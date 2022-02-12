@@ -250,7 +250,7 @@ module.exports = class PGPPlugin extends Plugin {
 			return args;
 		}
 
-		PGP.encrypt(this.gpgPath(), args[0].content, [senderKey, ...recipientKeys])
+		PGP.encrypt(this.gpgPath(), args[1].content, [senderKey, ...recipientKeys])
 			.then(async ({ stdout: encrypted }) => {
 				const { sendMessage } = await getModule(['sendMessage']);
 				sendMessage(channelId, { content: '```\n' + encrypted + '\n```', shibboleth: true });
