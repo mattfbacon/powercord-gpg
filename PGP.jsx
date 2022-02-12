@@ -23,20 +23,20 @@ function isFingerprint(content) {
 	return content.match(/[0-9A-F]{40}/) !== null;
 }
 
-function makeRecipients(...fingerprints) {
+function makeRecipients(fingerprints) {
 	return fingerprints.flatMap((fingerprint) => ['--recipient', fingerprint]);
 }
 
 async function decrypt(gpgPath, encrypted) {
 	return stdinToStdout(gpgPath, ['-d', '--batch'], encrypted);
 }
-async function encrypt(gpgPath, plain, recipients) {
-	const baseArgs = ['-sea', '--batch', '--always-trust'];
-	return stdinToStdout(gpgPath, baseArgs.concat(makeRecipients(...recipients)), plain);
+async function encrypt(gpgPath, plain, sender, recipients) {
+	const args = ['-sea', '--batch', '--always-trust', '--local-user', sender, ...makeRecipients([sender, ...recipients])];
+	return stdinToStdout(gpgPath, args, plain);
 }
 async function addPublicKey(gpgPath, key) {
-	const baseArgs = ['--import', '--batch'];
-	return stdinToStdout(gpgPath, baseArgs, key);
+	const args = ['--import', '--batch'];
+	return stdinToStdout(gpgPath, args, key);
 }
 async function exportPublicKey(gpgPath, fingerprint) {
 	const baseArgs = ['--export', '--armor', '--batch'];

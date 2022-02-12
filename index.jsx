@@ -36,23 +36,23 @@ module.exports = class PGPPlugin extends Plugin {
 	}
 
 	/**
-	 * @returns {{ recipientKeys: Set<string>, encrypt: bool }}
+	 * @returns {{ recipientKeys: string[], encrypt: bool }}
 	 */
 	getChannelConfig() {
-		let container = this.settings.get('channel-config');
-		if (!container || Object.prototype.toString.call(container) !== '[object Map]') {
-			container = new Map();
-			this.settings.set('channel-config', container);
-		}
-		let config = container.get(this.currentChannel);
+		const key = `channel-config-${this.currentChannel}`;
+		let config = this.settings.get(key);
 		if (!config || typeof config != 'object' || !config.hasOwnProperty('recipientKeys') || !config.hasOwnProperty('encrypt')) {
 			config = {
-				recipientKeys: new Set(),
+				recipientKeys: [],
 				encrypt: false,
 			};
-			container.set(this.currentChannel, config);
+			this.settings.set(key, config);
 		}
 		return config;
+	}
+	saveChannelConfig() {
+		const key = `channel-config-${this.currentChannel}`;
+		this.settings.set(key, this.settings.get(key));
 	}
 
 	async handleEncryptCommand(subcommand) {
@@ -84,6 +84,7 @@ module.exports = class PGPPlugin extends Plugin {
 					result: `Unknown subcommand ${subcommand}`,
 				};
 		}
+		this.saveChannelConfig();
 		return {
 			send: false,
 			result: `Encryption ${config.encrypt ? 'enabled' : 'disabled'}`,
@@ -102,20 +103,28 @@ module.exports = class PGPPlugin extends Plugin {
 					}
 				}
 				for (const fingerprint of args) {
-					config.recipientKeys.add(fingerprint);
+					if (!config.recipientKeys.includes(fingerprint)) {
+						config.recipientKeys.push(fingerprint);
+					}
 				}
+				this.saveChannelConfig();
 				return { send: false, result: 'Success!' };
 			case 'remove':
 				for (const fingerprint of args) {
-					config.recipientKeys.delete(fingerprint);
+					const idx = config.recipientKeys.indexOf(fingerprint);
+					if (idx && idx !== -1) {
+						config.recipientKeys.splice(idx, 1);
+					}
 				}
+				this.saveChannelConfig();
 				return { send: false, result: 'Success!' };
 			case 'clear':
-				config.recipientKeys.clear();
+				config.recipientKeys = [];
+				this.saveChannelConfig();
 				return { send: false, result: 'Success!' };
 			case undefined:
-				if (config.recipientKeys.size > 0) {
-					return { send: false, result: `The current recipient fingerprints are \`\`\`\n${[...config.recipientKeys.values()].join('\n')}\n\`\`\`` };
+				if (config.recipientKeys.length > 0) {
+					return { send: false, result: `The current recipient fingerprints are \`\`\`\n${config.recipientKeys.join('\n')}\n\`\`\`` };
 				} else {
 					return { send: false, result: 'There are currently no recipients.' };
 				}
@@ -250,7 +259,7 @@ module.exports = class PGPPlugin extends Plugin {
 			return args;
 		}
 
-		PGP.encrypt(this.gpgPath(), args[1].content, [senderKey, ...recipientKeys])
+		PGP.encrypt(this.gpgPath(), args[1].content, senderKey, recipientKeys)
 			.then(async ({ stdout: encrypted }) => {
 				const { sendMessage } = await getModule(['sendMessage']);
 				sendMessage(channelId, { content: '```\n' + encrypted + '\n```', shibboleth: true });
