@@ -13,7 +13,7 @@ module.exports = class PGPPlugin extends Plugin {
 	}
 
 	startPlugin() {
-		powercord.api.settings.registerSettings(this.entityID, {
+		powercord.api.settings.registerSettings(Constants.PLUGIN_SHORT_NAME, {
 			category: this.entityID,
 			label: 'PGP',
 			render: Settings,
@@ -30,7 +30,7 @@ module.exports = class PGPPlugin extends Plugin {
 	}
 
 	pluginWillUnload() {
-		powercord.api.settings.unregisterSettings(this.entityID);
+		powercord.api.settings.unregisterSettings(Constants.PLUGIN_SHORT_NAME);
 		powercord.api.commands.unregisterCommand('pgp');
 		this.uninject();
 	}

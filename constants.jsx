@@ -1,4 +1,5 @@
 module.exports = {
+	PLUGIN_SHORT_NAME: 'powercord-gpg',
 	INJECTION_NAME_RX: 'pgp-plugin-receive',
 	INJECTION_NAME_TX: 'pgp-plugin-send',
 	INJECTION_NAME_UPDATECHID: 'pgp-plugin-chidup',
