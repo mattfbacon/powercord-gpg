@@ -200,7 +200,7 @@ module.exports = class PGPPlugin extends Plugin {
 		const PrivateChannel = await getModuleByDisplayName('PrivateChannel');
 		Injector.inject(Constants.INJECTION_NAME_UPDATECHID, PrivateChannel.prototype, 'render', (args, res) => {
 			const re = /\@me\/(.*)/;
-			this.currentChannel = re.exec(window.location.href)[1];
+			this.currentChannel = re.exec(window.location.href)?.[1];
 			return res;
 		});
 	}
